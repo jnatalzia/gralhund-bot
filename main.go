@@ -101,19 +101,36 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			s.ChannelMessageSend(m.ChannelID, gifUrl)
 		}
 
-		reMatch, _ := regexp.Match("resize", []byte(trimmedMessage))
-		if reMatch {
+		re = regexp.MustCompile("make emoji from \"([0-9A-Za-z:/._-]+)\" with name \"([a-z_][0-9a-z_]+)\"")
+		for _, match := range re.FindAllStringSubmatch(trimmedMessage, -1) {
 			fmt.Println("Adding emoji")
-			emoji, err := s.GuildEmojiCreate(GUILD_ID, "test_emoji", imageResizer.ResizeImage("test.jpg"), []string{})
+			urlPath := match[1]
+			newName := match[2]
+			fmt.Println(urlPath)
+			p, err := imageResizer.DownloadImage(urlPath)
+			if err != nil {
+				fmt.Println(err)
+				s.ChannelMessageSend(m.ChannelID, "There was an issue downloading your image :(")
+				return
+			}
+			baseSixFourData, err := imageResizer.ResizeImage(p)
+			if err != nil {
+				fmt.Println(err)
+				s.ChannelMessageSend(m.ChannelID, "There was an issue resizing your image :(")
+				return
+			}
+			_, err = s.GuildEmojiCreate(GUILD_ID, newName, baseSixFourData, []string{})
 
 			if err != nil {
 				fmt.Println(err)
-			} else {
-				fmt.Println(emoji)
+				s.ChannelMessageSend(m.ChannelID, "There was an issue creating your image :(")
+				return
 			}
+
+			s.ChannelMessageSend(m.ChannelID, "Emoji created! 🎉")
 		}
 
-		reMatch, _ = regexp.Match("ping", []byte(trimmedMessage))
+		reMatch, _ := regexp.Match("ping", []byte(trimmedMessage))
 		if reMatch {
 			s.ChannelMessageSend(m.ChannelID, "Pong!")
 		}
