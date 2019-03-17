@@ -82,7 +82,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if DEBUG == true {
 		botName = "gralhund-test"
 	}
-	if strings.HasPrefix(lowerContent, botName) {
+	if strings.HasPrefix(lowerContent, botName + " ") {
 		var trimmedMessage = lowerContent[9:]
 
 		// Find the channel that the message came from.
