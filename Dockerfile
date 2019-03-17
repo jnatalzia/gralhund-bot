@@ -1,5 +1,8 @@
 FROM golang:1.12
 
+ENV IMAGEPATH=/tmp
+RUN mkdir -p /tmp
+
 WORKDIR /go/src/app
 COPY ./main.go .
 COPY ./giphy ./giphy

@@ -32,7 +32,7 @@ func checkDebug() {
 }
 
 var giphyClient = giphy.NewClient(&giphy.ClientOptions{})
-var imageResizer = resizer.NewResizer("/Users/Natalzia/go_work/src/github.com/jnatalzia/gralhund-bot/tmp")
+var imageResizer = resizer.NewResizer(os.Getenv("IMAGEPATH"))
 
 func main() {
 	checkDebug()
