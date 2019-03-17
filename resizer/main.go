@@ -38,7 +38,6 @@ func (r *Resizer) DownloadImage(url string) (string, error) {
 	
 	defer response.Body.Close()
 	body, err := ioutil.ReadAll(response.Body)
-
 	if err != nil {
 		fmt.Println(err)
 		return "", err

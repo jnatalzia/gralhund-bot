@@ -3,3 +3,4 @@ dnd_bot
 secrets.txt
 gralhund-bot
 tmp/*
+dist/*
