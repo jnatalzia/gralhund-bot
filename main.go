@@ -101,7 +101,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			s.ChannelMessageSend(m.ChannelID, gifUrl)
 		}
 
-		re = regexp.MustCompile("make emoji from \"([0-9A-Za-z:/._-]+)\" with name \"([a-z_][0-9a-z_]+)\"")
+		re = regexp.MustCompile("make emoji from \"([0-9A-Za-z:/._-~%&?]+)\" with name \"([a-z_][0-9a-z_]+)\"")
 		for _, match := range re.FindAllStringSubmatch(trimmedMessage, -1) {
 			fmt.Println("Adding emoji")
 			urlPath := match[1]
