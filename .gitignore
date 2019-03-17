@@ -1,2 +1,5 @@
 *.DS_store
 dnd_bot
+secrets.txt
+gralhund-bot
+tmp/*
