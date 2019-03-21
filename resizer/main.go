@@ -2,7 +2,9 @@ package resizer
 
 import (
 	"github.com/nfnt/resize"
+	"image"
 	"image/jpeg"
+	"image/png"
 	"os"
 	"path"
 	"fmt"
@@ -51,15 +53,23 @@ func (r *Resizer) DownloadImage(url string) (string, error) {
 }
 
 func (r *Resizer) ResizeImage(filePath string) (string, error) {
-	// open "test.jpg"
 	p := path.Join(r.fileRoot, filePath)
 	file, err := os.Open(p)
 	if err != nil {
 		return "", err
 	}
 
+	imgType := strings.Split(filePath, ".")
+	extension := imgType[len(imgType) - 1]
+
+	var img image.Image
 	// decode jpeg into image.Image
-	img, err := jpeg.Decode(file)
+	if extension == "png" {
+		img, err = png.Decode(file)	
+	} else {
+		img, err = jpeg.Decode(file)
+	}
+
 	if err != nil {
 		return "", err
 	}
@@ -68,19 +78,17 @@ func (r *Resizer) ResizeImage(filePath string) (string, error) {
 	// resize to width 1000 using Lanczos resampling
 	// and preserve aspect ratio
 	m := resize.Thumbnail(128, 128, img, resize.Lanczos3)
+	// alright pass back the base 64 data
+	buf := new(bytes.Buffer)
+	if extension == "png" {
+		err = png.Encode(buf, m)
+	} else {
+		err = jpeg.Encode(buf, m, nil)
+	}
 
-	np := path.Join(r.fileRoot, "test_resized.jpg")
-	out, err := os.Create(np)
 	if err != nil {
 		return "", err
 	}
-	defer out.Close()
 
-	// write new image to file
-	jpeg.Encode(out, m, nil)
-
-	// alright pass back the base 64 data
-	buf := new(bytes.Buffer)
-	err = jpeg.Encode(buf, m, nil)
-	return "data:image/png;base64," + base64.StdEncoding.EncodeToString([]byte(buf.Bytes())), nil
+	return "data:image/" + extension + ";base64," + base64.StdEncoding.EncodeToString([]byte(buf.Bytes())), nil
 }
