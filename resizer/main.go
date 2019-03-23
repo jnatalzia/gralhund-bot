@@ -1,18 +1,22 @@
 package resizer
 
 import (
-	"github.com/nfnt/resize"
+	"bytes"
+	"encoding/base64"
+	"errors"
+	"fmt"
 	"image"
 	"image/jpeg"
 	"image/png"
+	"io/ioutil"
+	"net/http"
 	"os"
 	"path"
-	"fmt"
-	"net/http"
-	"encoding/base64"
-	"bytes"
 	"strings"
-	"io/ioutil"
+
+	"github.com/gabriel-vasile/mimetype"
+	"github.com/jnatalzia/gralhund-bot/utils"
+	"github.com/nfnt/resize"
 )
 
 type Resizer struct {
@@ -28,7 +32,17 @@ func NewResizer(root string) *Resizer {
 }
 
 func (r *Resizer) DownloadImage(url string) (string, error) {
-	response, err := http.Get(url)
+	// User-Agent:
+	client := &http.Client{}
+	req, err := http.NewRequest("GET", url, nil)
+
+	if err != nil {
+		fmt.Println(err)
+		return "", err
+	}
+
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.14; rv:66.0) Gecko/20100101 Firefox/66.0")
+	response, err := client.Do(req)
 
 	if err != nil {
 		fmt.Println(err)
@@ -36,8 +50,8 @@ func (r *Resizer) DownloadImage(url string) (string, error) {
 	}
 
 	s := strings.Split(url, "/")
-	filename := s[len(s) - 1]
-	
+	filename := s[len(s)-1]
+
 	defer response.Body.Close()
 	body, err := ioutil.ReadAll(response.Body)
 	if err != nil {
@@ -58,14 +72,24 @@ func (r *Resizer) ResizeImage(filePath string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	// TODO: Change file into bytearray early to prevent (presumed) double open
+	mime, extension, err := mimetype.DetectFile(p)
+	if err != nil {
+		return "", err
+	}
+	fmt.Println("File info")
+	fmt.Println(mime)
 
-	imgType := strings.Split(filePath, ".")
-	extension := imgType[len(imgType) - 1]
+	allowedExtensions := []string{"png", "jpeg", "jpg"}
+
+	if !utils.Contains(allowedExtensions, extension) {
+		return "", errors.New("True file extension was " + extension + ". Must be one of png, jpeg, jpg")
+	}
 
 	var img image.Image
 	// decode jpeg into image.Image
 	if extension == "png" {
-		img, err = png.Decode(file)	
+		img, err = png.Decode(file)
 	} else {
 		img, err = jpeg.Decode(file)
 	}

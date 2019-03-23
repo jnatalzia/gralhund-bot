@@ -3,21 +3,23 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/bwmarrin/discordgo"
-	"github.com/jnatalzia/gralhund-bot/giphy"
-	"github.com/jnatalzia/gralhund-bot/resizer"
 	"os"
 	"os/signal"
 	"regexp"
-	"strings"
 	"strconv"
+	"strings"
 	"syscall"
+
+	"github.com/bwmarrin/discordgo"
+	"github.com/jnatalzia/gralhund-bot/commands"
+	"github.com/jnatalzia/gralhund-bot/giphy"
+	"github.com/jnatalzia/gralhund-bot/resizer"
 )
 
 var token string
-var RATING string = "pg-13"
-var DEBUG bool = strings.ToLower(os.Getenv("DEBUG")) == "true"
-var GUILD_ID string = "554402794711416838"
+var RATING = "pg-13"
+var DEBUG = strings.ToLower(os.Getenv("DEBUG")) == "true"
+var GUILD_ID = "554402794711416838"
 
 func init() {
 	flag.StringVar(&token, "t", "", "Bot Token")
@@ -32,10 +34,17 @@ func checkDebug() {
 }
 
 var giphyClient = giphy.NewClient(&giphy.ClientOptions{})
-var imageResizer = resizer.NewResizer(os.Getenv("IMAGEPATH"))
+
+var imageStorePath = os.Getenv("IMAGEPATH")
+
+var imageResizer *resizer.Resizer
 
 func main() {
 	checkDebug()
+	if imageStorePath == "" {
+		imageStorePath = "/tmp"
+	}
+	imageResizer = resizer.NewResizer(imageStorePath)
 
 	if token == "" {
 		fmt.Println("No token provided. Please run: dndbot -t <bot token>")
@@ -82,7 +91,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if DEBUG == true {
 		botName = "gralhund-test"
 	}
-	if strings.HasPrefix(lowerContent, botName + " ") {
+	if strings.HasPrefix(lowerContent, botName+" ") {
 		var trimmedMessage = lowerContent[9:]
 
 		// Find the channel that the message came from.
@@ -106,7 +115,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			fmt.Println("Adding emoji")
 			urlPath := match[1]
 			newName := match[2]
-			fmt.Println(urlPath)
+
 			p, err := imageResizer.DownloadImage(urlPath)
 			if err != nil {
 				fmt.Println(err)
@@ -116,7 +125,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			baseSixFourData, err := imageResizer.ResizeImage(p)
 			if err != nil {
 				fmt.Println(err)
-				s.ChannelMessageSend(m.ChannelID, "There was an issue resizing your image :(")
+				s.ChannelMessageSend(m.ChannelID, "There was an issue resizing your image: "+err.Error())
 				return
 			}
 			_, err = s.GuildEmojiCreate(GUILD_ID, newName, baseSixFourData, []string{})
@@ -133,6 +142,18 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		reMatch, _ := regexp.Match("ping", []byte(trimmedMessage))
 		if reMatch {
 			s.ChannelMessageSend(m.ChannelID, "Pong!")
+		}
+
+		reMatch, _ = regexp.Match("help", []byte(trimmedMessage))
+		if reMatch {
+			hi := commands.ListHelp()
+
+			s.ChannelMessageSend(m.ChannelID, "Gralhund knows the following tricks")
+			s.ChannelMessageSend(m.ChannelID, "<term> denotes your input, ? means that portion is optional")
+			for _, element := range hi {
+				// element is the element from someSlice for where we are
+				s.ChannelMessageSend(m.ChannelID, "`"+element.Command+"`"+": "+element.Description)
+			}
 		}
 	}
 }
