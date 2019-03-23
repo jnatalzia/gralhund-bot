@@ -14,12 +14,15 @@ import (
 	"github.com/jnatalzia/gralhund-bot/commands"
 	"github.com/jnatalzia/gralhund-bot/giphy"
 	"github.com/jnatalzia/gralhund-bot/resizer"
+	"github.com/jnatalzia/gralhund-bot/utils"
 )
 
 var token string
 var RATING = "pg-13"
 var DEBUG = strings.ToLower(os.Getenv("DEBUG")) == "true"
 var GUILD_ID = "554402794711416838"
+
+var redisClient = utils.RedisClient
 
 func init() {
 	flag.StringVar(&token, "t", "", "Bot Token")
@@ -153,6 +156,39 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			for _, element := range hi {
 				// element is the element from someSlice for where we are
 				s.ChannelMessageSend(m.ChannelID, "`"+element.Command+"`"+": "+element.Description)
+			}
+		}
+
+		re = regexp.MustCompile("give ([0-9]{1,2}) points to <@([0-9]+)>")
+		for _, match := range re.FindAllStringSubmatch(trimmedMessage, -1) {
+			fmt.Println("Attempting to give user points")
+			numPoints := match[1]
+			username := match[2]
+
+			intPointVal, _ := strconv.Atoi(numPoints)
+			message, err := commands.GivePointsToUser(username, intPointVal)
+
+			if err != nil {
+				fmt.Println(err)
+				s.ChannelMessageSend(m.ChannelID, "There was a problem giving that user points. "+err.Error())
+			}
+
+			s.ChannelMessageSend(m.ChannelID, message)
+		}
+
+		reMatch, _ = regexp.Match("show point leaderboard", []byte(trimmedMessage))
+		if reMatch {
+			leaderboard, err := commands.GetPointLeaderBoard(s)
+
+			if err != nil {
+				fmt.Println(err)
+				s.ChannelMessageSend(m.ChannelID, "There was an issue generating the leaderboard. "+err.Error())
+				return
+			}
+			s.ChannelMessageSend(m.ChannelID, "Current Leaderboard: ")
+
+			for _, entry := range leaderboard {
+				s.ChannelMessageSend(m.ChannelID, entry.Username+": "+strconv.Itoa(entry.Points)+" points")
 			}
 		}
 	}
