@@ -166,11 +166,28 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			username := match[2]
 
 			intPointVal, _ := strconv.Atoi(numPoints)
-			message, err := commands.GivePointsToUser(username, intPointVal)
+			message, err := commands.GivePointsToUser(username, intPointVal, m.Author.ID)
 
 			if err != nil {
 				fmt.Println(err)
 				s.ChannelMessageSend(m.ChannelID, "There was a problem giving that user points. "+err.Error())
+			}
+
+			s.ChannelMessageSend(m.ChannelID, message)
+		}
+
+		re = regexp.MustCompile("take ([0-9]{1,2}) points from <@([0-9]+)>")
+		for _, match := range re.FindAllStringSubmatch(trimmedMessage, -1) {
+			fmt.Println("Attempting to take away user points")
+			numPoints := match[1]
+			username := match[2]
+
+			intPointVal, _ := strconv.Atoi(numPoints)
+			message, err := commands.TakePointsFromUser(username, intPointVal, m.Author.ID)
+
+			if err != nil {
+				fmt.Println(err)
+				s.ChannelMessageSend(m.ChannelID, "There was a problem taking that user's points. "+err.Error())
 			}
 
 			s.ChannelMessageSend(m.ChannelID, message)
