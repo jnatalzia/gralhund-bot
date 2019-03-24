@@ -20,7 +20,6 @@ import (
 var token string
 var RATING = "pg-13"
 var DEBUG = strings.ToLower(os.Getenv("DEBUG")) == "true"
-var GUILD_ID = "554402794711416838"
 
 var redisClient = utils.RedisClient
 
@@ -132,7 +131,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 				s.ChannelMessageSend(m.ChannelID, "There was an issue resizing your image: "+err.Error())
 				return
 			}
-			_, err = s.GuildEmojiCreate(GUILD_ID, newName, baseSixFourData, []string{})
+			_, err = s.GuildEmojiCreate(messageGuildID, newName, baseSixFourData, []string{})
 
 			if err != nil {
 				fmt.Println(err)
