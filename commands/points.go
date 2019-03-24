@@ -15,20 +15,20 @@ import (
 
 var MAX_POINTS_PER_DAY = 20
 
-func formatPointKey(userID string) string {
-	return userID + "__POINTS"
+func formatPointKey(userID string, messageGuildID string) string {
+	return userID + "-" + messageGuildID + "__POINTS"
 }
 
-func formatTimeKey(time string, userID string) string {
-	return userID + "__POINTS_GIVEN__" + time
+func formatTimeKey(time string, userID string, messageGuildID string) string {
+	return userID + "-" + messageGuildID + "__POINTS_GIVEN__" + time
 }
 
 // TODO: Cleanup duplicate logic around checking points given today (reuse the value when the transaction is complete to
 //    avoid taking user points before the redis commits the change
-func GivePointsToUser(userID string, numPoints int, authorID string) (message string, err error) {
+func GivePointsToUser(userID string, numPoints int, authorID string, messageGuildID string) (message string, err error) {
 	timeNow := time.Now().UTC()
 	timeString := strconv.Itoa(timeNow.Year()) + "-" + timeNow.Month().String() + "-" + strconv.Itoa(timeNow.Day())
-	timeKey := formatTimeKey(timeString, authorID)
+	timeKey := formatTimeKey(timeString, authorID, messageGuildID)
 
 	timeValue, timeErr := utils.RedisClient.Get(timeKey).Result()
 
@@ -42,7 +42,7 @@ func GivePointsToUser(userID string, numPoints int, authorID string) (message st
 		return "", errors.New("You are attempting to change more than the maximum allotted " + strconv.Itoa(MAX_POINTS_PER_DAY) + " points per day. You have added/removed " + strconv.Itoa(givenPoints) + " today.")
 	}
 
-	formattedUserKey := formatPointKey(userID)
+	formattedUserKey := formatPointKey(userID, messageGuildID)
 	value, err := utils.RedisClient.Get(formattedUserKey).Result()
 
 	if err == redis.Nil {
@@ -74,10 +74,10 @@ func GivePointsToUser(userID string, numPoints int, authorID string) (message st
 	return "Points successfully awarded", nil
 }
 
-func TakePointsFromUser(userID string, numPoints int, authorID string) (message string, err error) {
+func TakePointsFromUser(userID string, numPoints int, authorID string, messageGuildID string) (message string, err error) {
 	timeNow := time.Now().UTC()
 	timeString := strconv.Itoa(timeNow.Year()) + "-" + timeNow.Month().String() + "-" + strconv.Itoa(timeNow.Day())
-	timeKey := formatTimeKey(timeString, authorID)
+	timeKey := formatTimeKey(timeString, authorID, messageGuildID)
 
 	timeValue, timeErr := utils.RedisClient.Get(timeKey).Result()
 
@@ -91,7 +91,7 @@ func TakePointsFromUser(userID string, numPoints int, authorID string) (message 
 		return "", errors.New("You are attempting to change more than the maximum allotted " + strconv.Itoa(MAX_POINTS_PER_DAY) + " points per day. You have added/removed " + strconv.Itoa(givenPoints) + " today.")
 	}
 
-	formattedUserKey := formatPointKey(userID)
+	formattedUserKey := formatPointKey(userID, messageGuildID)
 	value, err := utils.RedisClient.Get(formattedUserKey).Result()
 
 	if err == redis.Nil {
@@ -134,8 +134,8 @@ func (p pointList) Len() int           { return len(p) }
 func (p pointList) Less(i, j int) bool { return p[i].Points < p[j].Points }
 func (p pointList) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
 
-func GetPointLeaderBoard(s *discordgo.Session) (pointList, error) {
-	allKeys, _, err := utils.RedisClient.Scan(0, "*__POINTS", 1000).Result()
+func GetPointLeaderBoard(s *discordgo.Session, messageGuildID string) (pointList, error) {
+	allKeys, _, err := utils.RedisClient.Scan(0, "*"+messageGuildID+"__POINTS", 1000).Result()
 	if err != nil {
 		return nil, err
 	}
@@ -143,7 +143,7 @@ func GetPointLeaderBoard(s *discordgo.Session) (pointList, error) {
 	result := make(pointList, len(allKeys))
 	for idx, k := range allKeys {
 		value, _ := utils.RedisClient.Get(k).Result()
-		userid := strings.Split(k, "__")[0]
+		userid := strings.Split(k, "-")[0]
 		user, err := s.User(userid)
 
 		if err != nil {

@@ -95,6 +95,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		botName = "gralhund-test"
 	}
 	if strings.HasPrefix(lowerContent, botName+" ") {
+		messageGuildID := m.GuildID
 		var trimmedMessage = lowerContent[9:]
 
 		// Find the channel that the message came from.
@@ -169,7 +170,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			username := match[2]
 
 			intPointVal, _ := strconv.Atoi(numPoints)
-			message, err := commands.GivePointsToUser(username, intPointVal, m.Author.ID)
+			message, err := commands.GivePointsToUser(username, intPointVal, m.Author.ID, messageGuildID)
 
 			if err != nil {
 				fmt.Println(err)
@@ -186,7 +187,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			username := match[2]
 
 			intPointVal, _ := strconv.Atoi(numPoints)
-			message, err := commands.TakePointsFromUser(username, intPointVal, m.Author.ID)
+			message, err := commands.TakePointsFromUser(username, intPointVal, m.Author.ID, messageGuildID)
 
 			if err != nil {
 				fmt.Println(err)
@@ -198,7 +199,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 		reMatch, _ = regexp.Match("show point leaderboard", []byte(trimmedMessage))
 		if reMatch {
-			leaderboard, err := commands.GetPointLeaderBoard(s)
+			leaderboard, err := commands.GetPointLeaderBoard(s, messageGuildID)
 
 			if err != nil {
 				fmt.Println(err)
