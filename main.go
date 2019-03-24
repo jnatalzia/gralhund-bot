@@ -151,12 +151,15 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		if reMatch {
 			hi := commands.ListHelp()
 
-			s.ChannelMessageSend(m.ChannelID, "Gralhund knows the following tricks")
-			s.ChannelMessageSend(m.ChannelID, "<term> denotes your input, ? means that portion is optional")
-			for _, element := range hi {
-				// element is the element from someSlice for where we are
-				s.ChannelMessageSend(m.ChannelID, "`"+element.Command+"`"+": "+element.Description)
+			s.ChannelMessageSend(m.ChannelID, "Gralhund knows the following tricks\n<term> denotes your input, ? means that portion is optional")
+
+			allStrings := make([]string, len(hi))
+
+			for idx, element := range hi {
+				allStrings[idx] = "`" + element.Command + "`" + ": " + element.Description
 			}
+
+			s.ChannelMessageSend(m.ChannelID, strings.Join(allStrings, "\n"))
 		}
 
 		re = regexp.MustCompile("give ([0-9]+) points to <@([0-9]+)>")
@@ -204,9 +207,14 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			}
 			s.ChannelMessageSend(m.ChannelID, "Current Leaderboard: ")
 
-			for _, entry := range leaderboard {
-				s.ChannelMessageSend(m.ChannelID, entry.Username+": "+strconv.Itoa(entry.Points)+" points")
+			allStrings := make([]string, len(leaderboard))
+
+			for idx, entry := range leaderboard {
+				allStrings[idx] = entry.Username + ": " + strconv.Itoa(entry.Points) + " points"
+
 			}
+
+			s.ChannelMessageSend(m.ChannelID, strings.Join(allStrings, "\n"))
 		}
 	}
 }
