@@ -162,7 +162,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			s.ChannelMessageSend(m.ChannelID, strings.Join(allStrings, "\n"))
 		}
 
-		re = regexp.MustCompile("give ([0-9]+) points to <@([0-9]+)>")
+		re = regexp.MustCompile("give ([0-9]+) points? to <@([0-9]+)>")
 		for _, match := range re.FindAllStringSubmatch(trimmedMessage, -1) {
 			fmt.Println("Attempting to give user points")
 			numPoints := match[1]
@@ -179,7 +179,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			s.ChannelMessageSend(m.ChannelID, message)
 		}
 
-		re = regexp.MustCompile("take ([0-9]+) points from <@([0-9]+)>")
+		re = regexp.MustCompile("take ([0-9]+) points? from <@([0-9]+)>")
 		for _, match := range re.FindAllStringSubmatch(trimmedMessage, -1) {
 			fmt.Println("Attempting to take away user points")
 			numPoints := match[1]

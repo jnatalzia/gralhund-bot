@@ -3,6 +3,7 @@ package commands
 import (
 	"errors"
 	"fmt"
+	"math"
 	"sort"
 	"strconv"
 	"strings"
@@ -23,9 +24,7 @@ func formatTimeKey(time string, userID string, messageGuildID string) string {
 	return userID + "-" + messageGuildID + "__POINTS_GIVEN__" + time
 }
 
-// TODO: Cleanup duplicate logic around checking points given today (reuse the value when the transaction is complete to
-//    avoid taking user points before the redis commits the change
-func GivePointsToUser(userID string, numPoints int, authorID string, messageGuildID string) (message string, err error) {
+func changeUserPoints(userID string, numPoints int, authorID string, messageGuildID string) (message string, err error) {
 	timeNow := time.Now().UTC()
 	timeString := strconv.Itoa(timeNow.Year()) + "-" + timeNow.Month().String() + "-" + strconv.Itoa(timeNow.Day())
 	timeKey := formatTimeKey(timeString, authorID, messageGuildID)
@@ -38,7 +37,10 @@ func GivePointsToUser(userID string, numPoints int, authorID string, messageGuil
 		givenPoints, _ = strconv.Atoi(timeValue)
 	}
 
-	if givenPoints+numPoints > MAX_POINTS_PER_DAY {
+	floatNumPoints := int(math.Abs(float64(numPoints)))
+	fmt.Println(floatNumPoints)
+
+	if givenPoints+floatNumPoints > MAX_POINTS_PER_DAY {
 		return "", errors.New("You are attempting to change more than the maximum allotted " + strconv.Itoa(MAX_POINTS_PER_DAY) + " points per day. You have added/removed " + strconv.Itoa(givenPoints) + " today.")
 	}
 
@@ -60,67 +62,31 @@ func GivePointsToUser(userID string, numPoints int, authorID string, messageGuil
 
 	if timeErr == redis.Nil {
 		fmt.Println("User: " + userID + " has not given points today. Adding.")
-		utils.RedisClient.Set(timeKey, numPoints, 0)
+		utils.RedisClient.Set(timeKey, floatNumPoints, 0)
 	} else if timeErr != nil {
 		return "", timeErr
 	} else {
 		intPoints, _ := strconv.Atoi(timeValue)
 		fmt.Println("Current points given for user: ", timeValue)
-		newPoints := intPoints + numPoints
+		newPoints := intPoints + floatNumPoints
 		fmt.Println("New points given for user: ", newPoints)
 		utils.RedisClient.Set(timeKey, newPoints, 0)
 	}
 
-	return "Points successfully awarded", nil
+	resultString := "Points successfully awarded"
+	if numPoints < 0 {
+		resultString = "Points successfully removed."
+	}
+
+	return resultString, nil
+}
+
+func GivePointsToUser(userID string, numPoints int, authorID string, messageGuildID string) (message string, err error) {
+	return changeUserPoints(userID, numPoints, authorID, messageGuildID)
 }
 
 func TakePointsFromUser(userID string, numPoints int, authorID string, messageGuildID string) (message string, err error) {
-	timeNow := time.Now().UTC()
-	timeString := strconv.Itoa(timeNow.Year()) + "-" + timeNow.Month().String() + "-" + strconv.Itoa(timeNow.Day())
-	timeKey := formatTimeKey(timeString, authorID, messageGuildID)
-
-	timeValue, timeErr := utils.RedisClient.Get(timeKey).Result()
-
-	givenPoints := 0
-	if timeErr == nil {
-		fmt.Println("User has changed " + timeValue + " points today.")
-		givenPoints, _ = strconv.Atoi(timeValue)
-	}
-
-	if givenPoints+numPoints > MAX_POINTS_PER_DAY {
-		return "", errors.New("You are attempting to change more than the maximum allotted " + strconv.Itoa(MAX_POINTS_PER_DAY) + " points per day. You have added/removed " + strconv.Itoa(givenPoints) + " today.")
-	}
-
-	formattedUserKey := formatPointKey(userID, messageGuildID)
-	value, err := utils.RedisClient.Get(formattedUserKey).Result()
-
-	if err == redis.Nil {
-		fmt.Println("Points do not exist for user: " + userID + ". Adding.")
-		utils.RedisClient.Set(formattedUserKey, -numPoints, 0)
-	} else if err != nil {
-		return "", err
-	} else {
-		intPoints, _ := strconv.Atoi(value)
-		fmt.Println("Current point value for user: ", value)
-		newPoints := intPoints - numPoints
-		fmt.Println("New point value for user: ", newPoints)
-		utils.RedisClient.Set(formattedUserKey, newPoints, 0)
-	}
-
-	if timeErr == redis.Nil {
-		fmt.Println("User: " + userID + " has not changed points today. Adding entry.")
-		utils.RedisClient.Set(timeKey, numPoints, 0)
-	} else if timeErr != nil {
-		return "", timeErr
-	} else {
-		intPoints, _ := strconv.Atoi(timeValue)
-		fmt.Println("Current points changed for user: ", timeValue)
-		newPoints := intPoints + numPoints
-		fmt.Println("New points changed for user: ", newPoints)
-		utils.RedisClient.Set(timeKey, newPoints, 0)
-	}
-
-	return "Points successfully removed", nil
+	return changeUserPoints(userID, -1*numPoints, authorID, messageGuildID)
 }
 
 type LeaderBoardEntry struct {
