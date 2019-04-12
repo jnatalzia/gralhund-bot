@@ -47,6 +47,7 @@ func main() {
 		imageStorePath = "/tmp"
 	}
 	imageResizer = resizer.NewResizer(imageStorePath)
+	commands.RetrieveDocs()
 
 	if token == "" {
 		fmt.Println("No token provided. Please run: dndbot -t <bot token>")
@@ -216,6 +217,10 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 			s.ChannelMessageSend(m.ChannelID, strings.Join(allStrings, "\n"))
 		}
+	}
+
+	if strings.HasPrefix(lowerContent, "!gods") {
+		s.ChannelMessageSend(m.ChannelID, commands.GetDocs())
 	}
 }
 
