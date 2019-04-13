@@ -2,6 +2,7 @@ package commands
 
 import (
 	"encoding/csv"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -17,6 +18,7 @@ type GameDoc struct {
 }
 
 var gameDocs []GameDoc
+var mappedDocs = make(map[string]*GameDoc)
 var projectRoot = os.Getenv("PROJECTROOT")
 
 func RetrieveDocs() {
@@ -40,23 +42,45 @@ func RetrieveDocs() {
 	gameDocs = []GameDoc{}
 	relevantRecords := records[1:]
 	for _, r := range relevantRecords {
-		gameDocs = append(gameDocs, GameDoc{
+		godFirstName := strings.Split(r[0], " ")[0]
+		godFirstName = strings.ToLower(strings.ReplaceAll(godFirstName, ",", ""))
+
+		result := GameDoc{
 			name:        r[0],
 			alignment:   r[1],
 			domains:     strings.Split(r[2], ","),
 			description: r[3],
-		})
+		}
+		gameDocs = append(gameDocs, result)
+		mappedDocs[godFirstName] = &result
 	}
+}
+
+func writeDocForGod(doc GameDoc, extended bool) string {
+	result := ""
+	result = result + "**" + doc.name + "**" + " " + "_" + doc.alignment + "_\n"
+	result = result + "Domains: " + strings.Join(doc.domains, ", ") + "\n"
+	if extended {
+		result = result + "Description: " + doc.description + "\n"
+	}
+	result = result + "\n"
+	return result
 }
 
 func GetDocs() string {
 	result := "**The Gods of Taldorei**\n--------------------------\n"
 
 	for _, doc := range gameDocs {
-		result = result + "**" + doc.name + "**" + " " + "_" + doc.alignment + "_\n"
-		result = result + "Domains: " + strings.Join(doc.domains, ", ") + "\n"
-		result = result + "Description: " + doc.description + "\n\n"
+		result = result + writeDocForGod(doc, false)
 	}
 
 	return result
+}
+
+func GetDoc(godName string) (string, error) {
+	god := mappedDocs[godName]
+	if god == nil {
+		return "", errors.New("God not found")
+	}
+	return writeDocForGod(*god, true), nil
 }

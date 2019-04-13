@@ -13,6 +13,8 @@ var allHelpInfo = []helpInfo{
 	helpInfo{Command: "give <pts> points to @<username>", Description: "Gives points to that user."},
 	helpInfo{Command: "take <pts> points from @<username>", Description: "Takes points from that user."},
 	helpInfo{Command: "show point leaderboard", Description: "Shows top points."},
+	helpInfo{Command: "!gods", Description: "Shows full list of The Gods of Taldorei."},
+	helpInfo{Command: "!gods <god_first_name>", Description: "Shows extended details for a single God."},
 }
 
 func ListHelp() []helpInfo {

@@ -220,6 +220,18 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	if strings.HasPrefix(lowerContent, "!gods") {
+		re := regexp.MustCompile("!gods ([a-zA-Z]+)")
+		for _, match := range re.FindAllStringSubmatch(lowerContent, -1) {
+			name := match[1]
+			result, err := commands.GetDoc(name)
+			if err != nil {
+				fmt.Println(err)
+				s.ChannelMessageSend(m.ChannelID, "There is no god with that name. Type `!gods` for a full list of available docs.")
+				return
+			}
+			s.ChannelMessageSend(m.ChannelID, result)
+			return
+		}
 		s.ChannelMessageSend(m.ChannelID, commands.GetDocs())
 	}
 }
