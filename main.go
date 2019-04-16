@@ -223,7 +223,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		re := regexp.MustCompile("!gods ([a-zA-Z]+)")
 		for _, match := range re.FindAllStringSubmatch(lowerContent, -1) {
 			name := match[1]
-			result, err := commands.GetDoc(name)
+			result, err := commands.GetGodDoc(name)
 			if err != nil {
 				fmt.Println(err)
 				s.ChannelMessageSend(m.ChannelID, "There is no god with that name. Type `!gods` for a full list of available docs.")
@@ -232,7 +232,23 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			s.ChannelMessageSend(m.ChannelID, result)
 			return
 		}
-		s.ChannelMessageSend(m.ChannelID, commands.GetDocs())
+		s.ChannelMessageSend(m.ChannelID, commands.GetGodDocs())
+	}
+
+	if strings.HasPrefix(lowerContent, "!chars") {
+		re := regexp.MustCompile("!chars ([a-zA-Z]+)")
+		for _, match := range re.FindAllStringSubmatch(lowerContent, -1) {
+			name := match[1]
+			result, err := commands.GetCharDoc(name)
+			if err != nil {
+				fmt.Println(err)
+				s.ChannelMessageSend(m.ChannelID, "There is no character with that name. Type `!chars` for a full list of available docs.")
+				return
+			}
+			s.ChannelMessageSend(m.ChannelID, result)
+			return
+		}
+		s.ChannelMessageSend(m.ChannelID, commands.GetCharDocs())
 	}
 }
 
