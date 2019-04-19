@@ -84,15 +84,19 @@ func main() {
 // message is created on any channel that the autenticated bot has access to.
 func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	// Ignore all messages created by the bot itself
-	// This isn't required in this specific example but it's a good practice.
 	if m.Author.ID == s.State.User.ID {
 		return
 	}
 
 	var lowerContent = strings.ToLower(m.Content)
 	botName := "gralhund"
+	onTestChannel := utils.ChannelIsTest(m.ChannelID)
 	if DEBUG == true {
-		botName = "gralhund-test"
+		if !onTestChannel {
+			return
+		}
+	} else if onTestChannel {
+		return
 	}
 	if strings.HasPrefix(lowerContent, botName+" ") {
 		messageGuildID := m.GuildID
@@ -197,7 +201,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			s.ChannelMessageSend(m.ChannelID, message)
 		}
 
-		reMatch, _ = regexp.Match("show point leaderboard", []byte(trimmedMessage))
+		reMatch, _ = regexp.Match("show points? leaderboard", []byte(trimmedMessage))
 		if reMatch {
 			leaderboard, err := commands.GetPointLeaderBoard(s, messageGuildID)
 
