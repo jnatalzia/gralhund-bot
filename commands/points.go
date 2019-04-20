@@ -15,7 +15,7 @@ import (
 	"github.com/jnatalzia/gralhund-bot/utils"
 )
 
-var MAX_POINTS_PER_DAY = 20
+var MaxPointsPerDay = 40
 
 func formatPointKey(userID string, messageGuildID string) string {
 	return userID + "-" + messageGuildID + "__POINTS"
@@ -41,8 +41,8 @@ func changeUserPoints(userID string, numPoints int, authorID string, messageGuil
 	floatNumPoints := int(math.Abs(float64(numPoints)))
 
 	// gralhund gives as many points as gralhund wants
-	if !utils.UserIsBot(authorID) && !utils.UserIsGod(authorID) && givenPoints+floatNumPoints > MAX_POINTS_PER_DAY {
-		return "", errors.New("You are attempting to change more than the maximum allotted " + strconv.Itoa(MAX_POINTS_PER_DAY) + " points per day. You have added/removed " + strconv.Itoa(givenPoints) + " today.")
+	if !utils.UserIsBot(authorID) && givenPoints+floatNumPoints > MaxPointsPerDay {
+		return "", errors.New("You are attempting to change more than the maximum allotted " + strconv.Itoa(MaxPointsPerDay) + " points per day. You have added/removed " + strconv.Itoa(givenPoints) + " today.")
 	}
 
 	formattedUserKey := formatPointKey(userID, messageGuildID)
