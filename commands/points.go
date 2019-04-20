@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"math/rand"
 	"sort"
 	"strconv"
 	"strings"
@@ -24,7 +25,7 @@ func formatTimeKey(time string, userID string, messageGuildID string) string {
 	return userID + "-" + messageGuildID + "__POINTS_GIVEN__" + time
 }
 
-func changeUserPoints(userID string, numPoints int, authorID string, messageGuildID string) (message string, err error) {
+func changeUserPoints(userID string, numPoints int, authorID string, messageGuildID string, members []*discordgo.Member) (message string, err error) {
 	timeNow := time.Now().UTC()
 	timeString := strconv.Itoa(timeNow.Year()) + "-" + timeNow.Month().String() + "-" + strconv.Itoa(timeNow.Day())
 	timeKey := formatTimeKey(timeString, authorID, messageGuildID)
@@ -38,9 +39,9 @@ func changeUserPoints(userID string, numPoints int, authorID string, messageGuil
 	}
 
 	floatNumPoints := int(math.Abs(float64(numPoints)))
-	fmt.Println(floatNumPoints)
 
-	if givenPoints+floatNumPoints > MAX_POINTS_PER_DAY {
+	// gralhund gives as many points as gralhund wants
+	if !utils.UserIsBot(authorID) && !utils.UserIsGod(authorID) && givenPoints+floatNumPoints > MAX_POINTS_PER_DAY {
 		return "", errors.New("You are attempting to change more than the maximum allotted " + strconv.Itoa(MAX_POINTS_PER_DAY) + " points per day. You have added/removed " + strconv.Itoa(givenPoints) + " today.")
 	}
 
@@ -76,17 +77,32 @@ func changeUserPoints(userID string, numPoints int, authorID string, messageGuil
 	resultString := "Points successfully awarded"
 	if numPoints < 0 {
 		resultString = "Points successfully removed."
+		// TODO: Turn random chances into constants/config
+		if members != nil && utils.UserIsBot(userID) && rand.Intn(10) <= 6 {
+			resultString = resultString + "\n\n:fire:You have invoked the wrath of Gralhund! :fire:\n"
+			wrathUserID := authorID
+			if rand.Intn(10) <= 5 {
+				fmt.Println("Selecting random user")
+				rand.Seed(time.Now().Unix())
+				randomUser := members[rand.Intn(len(members))]
+				wrathUserID = randomUser.User.ID
+			} else {
+				fmt.Println("Wrath against the defiler!")
+			}
+
+			changeUserPoints(wrathUserID, numPoints*2, utils.BotID, messageGuildID, nil)
+		}
 	}
 
 	return resultString, nil
 }
 
 func GivePointsToUser(userID string, numPoints int, authorID string, messageGuildID string) (message string, err error) {
-	return changeUserPoints(userID, numPoints, authorID, messageGuildID)
+	return changeUserPoints(userID, numPoints, authorID, messageGuildID, nil)
 }
 
-func TakePointsFromUser(userID string, numPoints int, authorID string, messageGuildID string) (message string, err error) {
-	return changeUserPoints(userID, -1*numPoints, authorID, messageGuildID)
+func TakePointsFromUser(userID string, numPoints int, authorID string, messageGuildID string, members []*discordgo.Member) (message string, err error) {
+	return changeUserPoints(userID, -1*numPoints, authorID, messageGuildID, members)
 }
 
 type LeaderBoardEntry struct {
