@@ -113,7 +113,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 
 		// do something cool
-		re := regexp.MustCompile("gif me ?([a-z0-9 ]+)?")
+		re := regexp.MustCompile("gif me ?([a-z0-9 '.,\"]+)?")
 		var gifRequest string
 		for _, match := range re.FindAllStringSubmatch(trimmedMessage, -1) {
 			gifRequest = match[1]
