@@ -35,7 +35,9 @@ func checkDebug() {
 	fmt.Println("Debug is " + strconv.FormatBool(DEBUG))
 }
 
-var giphyClient = giphy.NewClient(&giphy.ClientOptions{})
+var giphyClient = giphy.NewClient(&giphy.ClientOptions{
+	ApiKey: os.Getenv("GIPHY_KEY"),
+})
 
 var imageStorePath = os.Getenv("IMAGEPATH")
 
@@ -271,6 +273,7 @@ func getGif(keyword string) (string, error) {
 	if err != nil {
 		// Could not find channel.
 		fmt.Println("ERROR!!!")
+		fmt.Println(err)
 		return "", err
 	}
 	return g.URL, nil
